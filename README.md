@@ -49,3 +49,16 @@ sudo systemctl stop jenkins
 sudo systemctl daemon-reload
 sudo systemctl start jenkins
 ```
+6. 젠킨스 서버에 git 설치
+```
+sudo apt install git
+```
+
+7. 젠킨스-docker hub
+```
+sudo apt install docker.io
+sudo usermod -aG docker jenkins
+sudo systemctl restart docker
+sudo systemctl restart jenkins
+sudo chmod 666 /var/run/docker.sock
+```
