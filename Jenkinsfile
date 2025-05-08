@@ -2,26 +2,43 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'kwonzizi/my-app'
-        DOCKER_CREDENTIALS_ID = 'kwonzizi_docker'
+        dockerHubRegistry = "kwonzizi/my-app"                   // DockerHub 이미지 이름
+        dockerHubRegistryCredential = "kwonzizi_docker"         // Jenkins Credentials ID
     }
 
     stages {
-
-        stage('Build Docker Image') {
+        stage('docker image build') {
             steps {
-                script {
-                    docker.build(DOCKER_IMAGE)
+                sh "docker build . -t ${dockerHubRegistry}:${currentBuild.number} -t ${dockerHubRegistry}:latest"
+            }
+            post {
+                failure {
+                    echo 'Docker image build failure!'
+                }
+                success {
+                    echo 'Docker image build success!'
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Docker Image Push') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        docker.image(DOCKER_IMAGE).push('latest')
-                    }
+                withDockerRegistry([ credentialsId: dockerHubRegistryCredential, url: "" ]) {
+                    sh "docker push ${dockerHubRegistry}:${currentBuild.number}"
+                    sh "docker push ${dockerHubRegistry}:latest"
+                    sleep 10
+                }
+            }
+            post {
+                failure {
+                    echo 'Docker Image Push failure!'
+                    sh "docker rmi ${dockerHubRegistry}:${currentBuild.number} || true"
+                    sh "docker rmi ${dockerHubRegistry}:latest || true"
+                }
+                success {
+                    echo 'Docker image push success!'
+                    sh "docker rmi ${dockerHubRegistry}:${currentBuild.number} || true"
+                    sh "docker rmi ${dockerHubRegistry}:latest || true"
                 }
             }
         }
